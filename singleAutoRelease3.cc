@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 using std::cin;
 using std::cout;
@@ -11,9 +11,17 @@ class Signleton{
 public:
     static Signleton * getInstance(){
         if(nullptr == _pInstence){
+            atexit(destroy);
             _pInstence = new Signleton();
         }
         return _pInstence;
+    }
+
+    static void destroy(){
+        if(Signleton::_pInstence){
+            delete Signleton::_pInstence;
+            Signleton::_pInstence = nullptr;
+        }
     }
 private:
     Signleton(){
@@ -22,15 +30,15 @@ private:
 
     ~Signleton(){
         cout << "~Signleton()" << endl;
-        if(Signleton::_pInstence){
-            delete Signleton::_pInstence;
-            Signleton::_pInstence = nullptr;
-        }
     }
-static Signleton * _pInstence;
+    static Signleton * _pInstence;
 };
 
-Signleton * Signleton::_pInstence = nullptr;
+//无法应对多线程的需求
+/* Signleton * Signleton::_pInstence = nullptr; */
+
+//不太优雅
+Signleton * Signleton::_pInstence = Signleton::getInstance();
 
 void test01(){
     Signleton * ps1 = Signleton::getInstance(); 
