@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <string.h>
 
 using std::cin;
 using std::cout;
@@ -44,6 +45,9 @@ void test01(){
     // is empty
     string str;
     cout << "Empty: " << str.empty() << endl;
+
+    string strTest = "hello world";
+    cout << sizeof(strTest.c_str()) << endl;
 }
 
 int main()

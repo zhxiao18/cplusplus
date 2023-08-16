@@ -14,13 +14,6 @@ public:
         return _pInstence;
     }
 
-    static void destroy(){
-        if(_pInstence){
-            delete _pInstence;
-            _pInstence = nullptr;
-        }
-    }
-
     static void init(){
         _pInstence = new Signleton();
         atexit(destroy);
@@ -28,6 +21,13 @@ public:
 private:
     Signleton(){
         cout << "Signleton()" << endl;
+    }
+
+    static void destroy(){
+        if(_pInstence){
+            delete _pInstence;
+            _pInstence = nullptr;
+        }
     }
 
     ~Signleton(){
