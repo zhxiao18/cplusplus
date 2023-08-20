@@ -1,3 +1,4 @@
+//移动构造、移动赋值函数
 #include <iostream>
 #include <string.h>
 #include <stdio.h>

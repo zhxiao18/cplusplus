@@ -1,3 +1,4 @@
+//运算符重载：成员函数形式
 #include <iostream>
 #include <string.h>
 #include <stdio.h>

@@ -1,3 +1,4 @@
+//set的使用
 #include <iostream>
 #include <set>
 #include <utility>
@@ -48,7 +49,7 @@ void test01(){
         cout << "insert error" << endl;
     }
     auto it3 = number.begin();
-    *it3 = 100;
+    /* *it3 = 100; */
 }
 
 int main()
