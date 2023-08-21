@@ -13,6 +13,9 @@ class Complex{
 
     //友元函数重载 <<
     friend ostream & operator<<(ostream &os, const Complex & rhs);
+
+    //友元重载 >>
+    friend istream & operator >>(istream &is, Complex & rhs);
 public:
     Complex(double real, double imag)
     :_real(real),
@@ -20,7 +23,7 @@ public:
     {
         cout << "Complex(double, double)" << endl;
     }
-
+    Complex(){}
     /* void print(){ */
     /*     cout << _real << " + " << _imag  << "i" << endl; */
     /* } */
@@ -69,7 +72,30 @@ Complex & operator+=(Complex & lhs, const Complex & rhs){
 ostream & operator<<(ostream &os, const Complex & rhs)
 {
     cout << "ostream & operator<<(ostream &os, const Complex & )" << endl;
-    cout << rhs._real << "+" << rhs._imag << "i" << endl; 
+    os << rhs._real << "+" << rhs._imag << "i" << endl; 
+}
+//---------------------------------------------
+void readDouble(istream & is, double & number){
+    while(is >> number, !is.eof()){
+        if(is.bad()){
+            std::cerr << "istream is bad" <<endl;
+            return;
+        }else if(is.fail()){
+            is.clear();
+            is.ignore(10240, '\n');
+            cout << "please input double number" << endl;
+        }else{
+            cout << "number = " << number << endl;
+            break;
+        }
+    }
+}
+istream & operator >>(istream &is, Complex & rhs){
+    cout << "istream & operator >>" << endl;
+    /* is >> rhs._real >> rhs._imag; */
+    readDouble(is, rhs._real);
+    readDouble(is, rhs._imag);
+    return is;
 }
 
 void test01(){
@@ -87,7 +113,7 @@ void test01(){
 
     cmp1 += cmp2;
     /* cmp1.print(); */
-    cout << cmp1;
+    cout << cmp1 << endl;;
 
 #if 0
     Complex cmp3 = cmp1 + cmp2;
@@ -95,9 +121,16 @@ void test01(){
 #endif
 }
 
+void test02(){
+    //重载 >>
+    Complex c2;
+    cin >> c2;
+    cout << c2 << endl;
+}
+
 int main()
 {   
-    test01();
+    test02();
     return 0;
 }
 
