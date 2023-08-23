@@ -1,3 +1,4 @@
+//队列的模板形式
 #include <iostream>
 #include <string.h>
 #include <stdio.h>
@@ -80,7 +81,8 @@ T Queue<T, kSize>::getFront(){
 template<class T, size_t kSize>
 T Queue<T, kSize>::getRear(){
     if(!empty()){
-        return _data[_rear - 1];
+        //特别注意
+        return _data[(_rear - 1 + kSize) % kSize];
     }
     else{
         cout << "Queue Empty." <<endl;
