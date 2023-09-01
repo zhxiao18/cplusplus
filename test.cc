@@ -64,7 +64,7 @@ int main()
     Base * pb = new Child(1);
     pb->func1();
     cout << pb->getValue() << endl; 
-    
+    /* cout << decltype(pb) << endl; */    
 	delete pb; 
     
 	return 0;

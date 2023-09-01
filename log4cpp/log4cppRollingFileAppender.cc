@@ -37,9 +37,6 @@ void test0(){
                                                   2);
     rollingfileApp->setLayout(ptn3);
 
-
-
-
     //4.创建日志记录器对象（来源）
     Category & root = Category::getRoot();
     //传入C风格字符串也可以，会发生隐式转换
@@ -69,7 +66,6 @@ void test0(){
         salesDepart.debug("this is a debug msg");
 
     }
-
 
     //8.日志系统要退出时，回收资源
     //Category对象内部会管理好资源
