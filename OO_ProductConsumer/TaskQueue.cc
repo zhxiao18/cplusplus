@@ -23,7 +23,6 @@ void TaskQueue::push(const int & value){
     }
 
     _que.push(value);
-
     _notifyEmpty.signal();
 }
 
