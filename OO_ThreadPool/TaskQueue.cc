@@ -1,5 +1,7 @@
 #include "TaskQueue.h"
 
+using ElemType = Task *;
+
 TaskQueue::TaskQueue(size_t queSize)
 :_queSize(queSize),
 _notEmpty(_mutex),
@@ -63,7 +65,7 @@ bool TaskQueue::full() const
 
 bool TaskQueue::empty() const
 {
-    return 0 == _queSize;
+    return 0 == _que.size();
 }
 
 void TaskQueue::wakeup()
