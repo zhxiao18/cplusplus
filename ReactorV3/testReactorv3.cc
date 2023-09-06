@@ -1,5 +1,4 @@
-#include "Acceptor.h"
-#include "EventLoop.h"
+#include "TcpServer.h"
 #include "TcpConnection.h"
 #include <iostream>
 
@@ -9,7 +8,7 @@ using std::endl;
 void onNewConnection(const TcpConnectionPtr &con)
 {
     cout << con->toString() << " has connected." << endl;
-    cout << "connected" << endl;
+    /* cout << "connected" << endl; */
 }
 
 void onMessage(const TcpConnectionPtr &con)
@@ -26,20 +25,14 @@ void onMessage(const TcpConnectionPtr &con)
 void onClose(const TcpConnectionPtr &con)
 {
     cout << con->toString() << " has closed" << endl;
-    cout << "closed" << endl;
+    /* cout << "closed" << endl; */
 }
 
 int main(void)
 {
-    Acceptor acceptor("127.0.0.1", 12345);
-    acceptor.ready(); // 处于监听状态
-
-    EventLoop loop(acceptor);
-
-    loop.setNewConnectionCallback(std::move(onNewConnection));
-    loop.setMessageCallback(std::move(onMessage));
-    loop.setCloseCallback(std::move(onClose));
-
-    loop.loop();
+    TcpServer tcpServer("127.0.0.1", 10425);
+    tcpServer.setAll(std::move(onNewConnection), std::move(onMessage), std::move(onClose));
+    tcpServer.start();
+    /* tcpServer.stop(); */
     return 0;
 }
