@@ -8,21 +8,21 @@
 class Acceptor
 {
 public:
-    Acceptor(const string & ip, unsigned short port);
+    Acceptor(const string &ip, unsigned short port);
     ~Acceptor();
     void ready();
     int accept();
     int fd() const;
+
 private:
     void bind();
     void listen();
     void setReuseAddr();
     void setReusePort();
+
 private:
-   Socket _sock;
-   InetAddress _addr;
+    Socket _sock;
+    InetAddress _addr;
 };
 
 #endif
-
-
