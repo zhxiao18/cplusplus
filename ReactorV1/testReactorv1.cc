@@ -18,7 +18,7 @@ int main(void)
     while(1)
     {
        cout << ">>recv: " << tcpcon.receive() << endl;
-       tcpcon.send("hello!");
+       tcpcon.send("hello!\n");
     }
 
     return 0;

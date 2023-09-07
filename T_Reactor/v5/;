@@ -1,0 +1,51 @@
+#ifndef __ECHOSERVER_H__
+#define __ECHOSERVER_H__
+
+#include "TcpConnection.h"
+#include "TcpServer.h"
+#include "ThreadPool.h"
+#include <iostream>
+#include <unistd.h>
+
+using std::cout;
+using std::endl;
+
+class MyTask
+{
+public:
+    MyTask(const TcpConnectionPtr &con, const string &msg)
+    : _con(con)
+    , _msg(msg)
+    {
+
+    }
+    void process()
+    {
+        _con->sendInLoop(_msg);
+    }
+private:
+    TcpConnectionPtr _con;
+    string _msg;
+};
+
+void onNewConnection(const TcpConnectionPtr &con)
+{
+    cout << con->toString() << " has connected!" << endl;
+}
+
+void onMessage(const TcpConnectionPtr &con)
+{
+    string msg = con->receive();
+    cout << ">>recv client msg = " << msg << endl;
+
+    MyTask task(con, msg);
+    gPool->addTask(std::bind(&MyTask::process, task));
+}
+
+void onClose(const TcpConnectionPtr &con)
+{
+    cout << con->toString() << " has closed!" << endl;
+}
+
+
+#endif
