@@ -1,30 +1,31 @@
 #include "Socket.h"
-#include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
-#include <unistd.h>
+#include <unistd.h> //close
+#include <stdio.h> //perror
+
+Socket::Socket(int fd)
+:_sockfd(fd)
+{
+
+}
 
 Socket::Socket()
 {
-    _fd = socket(AF_INET, SOCK_STREAM, 0); 
-    if(_fd < 0)
+    _sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(_sockfd < 0)
     {
-        perror("socket");
+        perror("socket init");
         return;
     }
 }
 
 Socket::~Socket()
 {
-    close(_fd);
+    close(_sockfd);
 }
 
-Socket::Socket(int fd)
-:_fd(fd)
+int Socket::getSocketFd()
 {
-
-}
-
-int Socket::fd() const
-{
-    return _fd;
+    return _sockfd;
 }

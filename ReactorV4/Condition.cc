@@ -1,9 +1,10 @@
 #include "Condition.h"
 #include "MutexLock.h"
 #include <stdio.h>
+#include <pthread.h>
 
-Condition::Condition(MutexLock &mutex)
-: _mutex(mutex)
+Condition::Condition(MutexLock & mutex)
+:_mutex(mutex)
 {
     int ret = pthread_cond_init(&_cond, nullptr);
     if(ret)
@@ -12,7 +13,6 @@ Condition::Condition(MutexLock &mutex)
         return;
     }
 }
-
 Condition::~Condition()
 {
     int ret = pthread_cond_destroy(&_cond);
@@ -23,7 +23,7 @@ Condition::~Condition()
     }
 }
 
-//等待函数
+//等待
 void Condition::wait()
 {
     int ret = pthread_cond_wait(&_cond, _mutex.getMutexLockPtr());
@@ -33,8 +33,8 @@ void Condition::wait()
         return;
     }
 }
-//通知函数
-void Condition::notify()
+//唤醒
+void Condition::signal()
 {
     int ret = pthread_cond_signal(&_cond);
     if(ret)
@@ -44,7 +44,7 @@ void Condition::notify()
     }
 }
 
-void Condition::notifyAll()
+void Condition::broadCast()
 {
     int ret = pthread_cond_broadcast(&_cond);
     if(ret)

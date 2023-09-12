@@ -4,12 +4,12 @@
 using std::ostringstream;
 
 TcpConnection::TcpConnection(int fd)
-:_sockIO(fd),
-_sock(fd),
+:_socket(fd),
+_socketIo(fd),
 _localAddr(getLocalAddr()),
 _peerAddr(getPeerAddr())
 {
-    
+
 }
 
 TcpConnection::~TcpConnection()
@@ -19,46 +19,46 @@ TcpConnection::~TcpConnection()
 
 void TcpConnection::send(const string & msg)
 {
-    _sockIO.writen(msg.c_str(),msg.size());
+    _socketIo.writen(msg.c_str(), msg.size());
 }
 
 string TcpConnection::receive()
 {
-    char buf[4096] = {0};
-    _sockIO.readLine(buf, sizeof(buf));
+    char buf[65536] = {0};
+    _socketIo.readLine(buf, sizeof(buf));
+
     return string(buf);
 }
 
 string TcpConnection::toString()
 {
     ostringstream oss;
-    oss << _localAddr.ip() << ":" << _localAddr.port() << "->" << _peerAddr.ip() << ":" << _peerAddr.port();
+    oss << _localAddr.getIp() << ":" << _localAddr.getPort() << " ---> " << _peerAddr.getIp() << ":" << _peerAddr.getPort();
     return oss.str();
 }
 
 InetAddress TcpConnection::getLocalAddr()
 {
+    //获取本端地址信息
     struct sockaddr_in addr;
     socklen_t len = sizeof(struct sockaddr);
-
-    int ret = getsockname(_sock.fd(), (struct sockaddr *)&addr, &len);
+    int ret = getsockname(_socket.getSocketFd(), (struct sockaddr *)&addr, &len);
     if(-1 == ret)
     {
         perror("getsockname");
     }
-    return InetAddress(addr);
+    return addr;
 }
 
-//获取对端网络地址信息
 InetAddress TcpConnection::getPeerAddr()
 {
+    //获取对端地址信息
     struct sockaddr_in addr;
     socklen_t len = sizeof(struct sockaddr);
-
-    int ret = getpeername(_sock.fd(), (struct sockaddr *)&addr, &len);
+    int ret = getpeername(_socket.getSocketFd(), (struct sockaddr *)&addr, &len);
     if(-1 == ret)
     {
-        perror("getsockname");
+        perror("getpeername");
     }
-    return InetAddress(addr);
+    return addr;
 }

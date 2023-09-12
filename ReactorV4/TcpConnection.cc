@@ -1,10 +1,12 @@
 #include "TcpConnection.h"
+#include "EventLoop.h"
 #include <sstream>
 
 using std::ostringstream;
 
-TcpConnection::TcpConnection(int fd)
-:_sockIO(fd),
+TcpConnection::TcpConnection(int fd, EventLoop * loop)
+:_loop(loop),
+_sockIO(fd),
 _sock(fd),
 _localAddr(getLocalAddr()),
 _peerAddr(getPeerAddr())
@@ -20,6 +22,12 @@ TcpConnection::~TcpConnection()
 void TcpConnection::send(const string & msg)
 {
     _sockIO.writen(msg.c_str(),msg.size());
+}
+
+//把收到的数据发送给EventLoop
+void TcpConnection::sendToLoop(const string &msg)
+{
+   _loop->runInLoop(std::bind(&TcpConnection::send, this, msg));     
 }
 
 string TcpConnection::receive()

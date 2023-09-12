@@ -1,0 +1,2 @@
+rsync -av --exclude='foldername' source_folder/ destination_folder/
+/* 这个命令中，-av选项表示以归档模式进行复制，保持文件属性和递归复制子文件夹。--exclude='foldername'选项指定需要排除的文件夹名，source_folder/是源文件夹的路径（请注意路径末尾的斜杠），destination_folder/是目标文件夹的路径（同样请注意斜杠）。 */

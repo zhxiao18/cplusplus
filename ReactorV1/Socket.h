@@ -1,19 +1,15 @@
-#ifndef _SOCKET_H__
-#define _SOCKET_H__
-
-#include "NonCopyable.h"
+#ifndef __SOCKET_H__
+#define __SOCKET_H__
 
 class Socket
-:public NonCopyable
 {
 public:
+    explicit Socket(int fd);
     Socket();
     ~Socket();
-    explicit Socket(int fd);
-    int fd() const;
-
+    int getSocketFd();
 private:
-    int _fd;
+    int _sockfd;
 };
 
 #endif

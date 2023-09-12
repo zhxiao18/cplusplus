@@ -1,9 +1,11 @@
-#ifndef _ACCEPTOR_H__
-#define _ACCEPTOR_H__
+#ifndef __ACCEPTOR_H__
+#define __ACCEPTOR_H__
 
-#include "NonCopyable.h"
 #include "Socket.h"
 #include "InetAddress.h"
+#include <string>
+
+using std::string;
 
 class Acceptor
 {
@@ -12,17 +14,16 @@ public:
     ~Acceptor();
     void ready();
     int accept();
-    int fd() const;
+    int getFd();
 private:
     void bind();
     void listen();
-    void setReuseAddr();
-    void setReusePort();
+    void setIpReuse();
+    void setPortReuse();
 private:
-   Socket _sock;
-   InetAddress _addr;
+    Socket _socket;
+    InetAddress _addr;
 };
 
 #endif
-
 

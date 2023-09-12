@@ -1,4 +1,5 @@
 #include "MutexLock.h"
+#include <pthread.h>
 #include <stdio.h>
 
 MutexLock::MutexLock()
@@ -21,7 +22,6 @@ MutexLock::~MutexLock()
     }
 }
 
-//上锁
 void MutexLock::lock()
 {
     int ret = pthread_mutex_lock(&_mutex);
@@ -31,17 +31,7 @@ void MutexLock::lock()
         return;
     }
 }
-//尝试上锁
-void MutexLock::tryLock()
-{
-    int ret = pthread_mutex_trylock(&_mutex);
-    if(ret)
-    {
-        perror("pthread_mutex_trylock");
-        return;
-    }
-}
-//解锁
+
 void MutexLock::unlock()
 {
     int ret = pthread_mutex_unlock(&_mutex);
@@ -50,4 +40,18 @@ void MutexLock::unlock()
         perror("pthread_mutex_unlock");
         return;
     }
+}
+
+void MutexLock::trylock()
+{
+    int ret = pthread_mutex_trylock(&_mutex);
+    if(ret)
+    {
+        perror("pthread_mutex_trylock");
+        return;
+    }
+}
+pthread_mutex_t * MutexLock::getMutexLockPtr()
+{
+    return &_mutex;
 }

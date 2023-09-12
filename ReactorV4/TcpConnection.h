@@ -14,6 +14,7 @@ using std::shared_ptr;
 using std::function;
 
 class TcpConnection;
+class EventLoop;
 
 using TcpConnectionPtr = shared_ptr<TcpConnection>;
 using TcpConnectionCallback = function<void(const TcpConnectionPtr & con)>;
@@ -22,9 +23,10 @@ class TcpConnection
 : public std::enable_shared_from_this<TcpConnection>
 {
 public:
-    explicit TcpConnection(int fd);
+    explicit TcpConnection(int fd, EventLoop * loop);
     ~TcpConnection();
     void send(const string &msg);
+    void sendToLoop(const string &msg);
     string receive();
 
     // 调试函数
@@ -44,6 +46,7 @@ public:
 
     bool isClosed();
 private:
+    EventLoop *_loop;
     SocketIO _sockIO;
 
     // 调试变量

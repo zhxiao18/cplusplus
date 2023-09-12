@@ -1,6 +1,7 @@
 #ifndef _EVENTLOOP_H__
 #define _EVENTLOOP_H__
 
+#include "MutexLock.h"
 #include <sys/epoll.h>
 #include <map>
 #include <memory>
@@ -17,6 +18,7 @@ class TcpConnection;
 
 using TcpConnectionPtr = shared_ptr<TcpConnection>;
 using TcpConnectionCallback = function<void(const TcpConnectionPtr & con)>;
+using Functor = function<void()>;
 
 class EventLoop
 {
@@ -36,6 +38,16 @@ private:
     void handleMessage(int fd);
     void addEpollReadFd(int fd);
     void delEpollReadFd(int fd);
+
+    int createEventFd();
+public:
+    //执行系统调用ead函数
+    void handleRead();
+    //执行write函数
+    void weakup();
+    //执行线程池传递过来的任务
+    void doPendingFunctors();
+    void runInLoop(Functor &&cb);
 private:
     int _epfd;
     bool _isLooping;
@@ -45,6 +57,10 @@ private:
     TcpConnectionCallback _onConnection;
     TcpConnectionCallback _onMessage;
     TcpConnectionCallback _onClose;
+
+    int _evtfd; //eventfd返回的文件描述符
+    vector<Functor> _pendings;
+    MutexLock _mutex;
 };
 
 #endif

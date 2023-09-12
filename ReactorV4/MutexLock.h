@@ -1,51 +1,37 @@
-#ifndef __MUTEXLOCK_H__
-#define __MUTEXLOCK_H__
+#ifndef _MUTEXLOCK_H__
+#define _MUTEXLOCK_H__
 
-#include "NonCopyable.h"
 #include <pthread.h>
 
 class MutexLock
-: NonCopyable
 {
 public:
     MutexLock();
     ~MutexLock();
-
-    //上锁
     void lock();
-    //尝试上锁
-    void tryLock();
-    //解锁
     void unlock();
-
-    pthread_mutex_t *getMutexLockPtr()
-    {
-        return &_mutex;
-    }
-
+    void trylock();
+    pthread_mutex_t * getMutexLockPtr();
 private:
     pthread_mutex_t _mutex;
-
 };
 
+//RAII,防止死锁
 class MutexLockGuard
 {
 public:
-    //在构造函数中上锁
-    MutexLockGuard(MutexLock &mutex)
-    : _mutex(mutex)
+    MutexLockGuard(MutexLock & mutex)
+    :_mutex(mutex)
     {
         _mutex.lock();
     }
 
-    //在析构函数中进行解锁
     ~MutexLockGuard()
     {
         _mutex.unlock();
     }
 private:
-    MutexLock &_mutex;
+    MutexLock & _mutex;
 };
 
 #endif
-

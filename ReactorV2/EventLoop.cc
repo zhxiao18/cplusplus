@@ -1,16 +1,16 @@
 #include "EventLoop.h"
-#include "TcpConnection.h"
-#include "Acceptor.h"
 #include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
 #include <iostream>
 
-EventLoop::EventLoop(Acceptor &acceptor)
-: _epfd(createEpollFd()),
+EventLoop::EventLoop(Acceptor & accept)
+:_epfd(createEpollFd()),
 _isLooping(false),
-_acceptor(acceptor),
-_evtList(1024)
+_accept(accept),
+_evtList(1024) //同时监听的文件描述符上限
 {
-    addEpollReadFd(_acceptor.fd());
+    addEpollReadFd(_accept.getFd());
 }
 
 EventLoop::~EventLoop()
@@ -18,10 +18,11 @@ EventLoop::~EventLoop()
     close(_epfd);
 }
 
+//事件循环
 void EventLoop::loop()
 {
     _isLooping = true;
-    while (_isLooping)
+    while(_isLooping)
     {
         waitEpollFd();
     }
@@ -35,53 +36,74 @@ void EventLoop::unloop()
 int EventLoop::createEpollFd()
 {
     int fd = epoll_create(1);
-    if (fd < 0)
+    if(fd < 0)
     {
         perror("epoll_create");
+        return fd;
     }
     return fd;
 }
-void EventLoop::setNewConnectionCallback(TcpConnectionCallback &&cb)
+
+//将文件描述符添加到红黑树上
+void EventLoop::addEpollReadFd(int fd)
 {
-    _onConnection = std::move(cb);
-}
-void EventLoop::setMessageCallback(TcpConnectionCallback &&cb)
-{
-    _onMessage = std::move(cb);
+    struct epoll_event evt;
+    evt.data.fd = fd;
+    evt.events = EPOLLIN;
+
+    int ret = ::epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &evt);
+    if(-1 == ret)
+    {
+        perror("epoll_ctl_add error : -1");
+        return;
+    }
 }
 
-void EventLoop::setCloseCallback(TcpConnectionCallback &&cb)
+void EventLoop::delEpollReadFd(int fd)
 {
-    _onClose = std::move(cb);
+    struct epoll_event evt;
+    evt.data.fd = fd;
+    evt.events = EPOLLIN;
+
+    int ret = ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, &evt);
+    if(-1 == ret)
+    {
+        perror("epoll_ctl_del error : -1");
+        return;
+    }
 }
 
 void EventLoop::waitEpollFd()
 {
-    int nready = 0;
+    int ret;
     do{
-        nready = ::epoll_wait(_epfd, _evtList.data(), _evtList.size(), 3000);
-    } while (-1 == nready && errno == EINTR);
-    if(-1 == nready)
+        ret = ::epoll_wait(_epfd, _evtList.data(), _evtList.size(), 3000);
+    }while(-1 == ret && errno == EINTR);
+
+    if(-1 == ret)
     {
-        perror("epoll_wait nready = -1");
+        perror("epoll_wait: errno = -1");
     }
-    else if(0 == nready)
+    else if(0 == ret)
     {
-        std::cout << ">>epoll_wait timeout" << std::endl;
+        /* perror(">>epoll_wait timeout."); */
+        std::cout << "epoll_wait timeout!" << std::endl;
     }
     else
     {
-        //监听的文件描述符超过上限，扩容
-        if(nready == _evtList.size())
+        //监听的文件描述符超过上限
+        if(ret == (int)_evtList.size())
         {
-            _evtList.resize(2 * nready);
+            _evtList.resize(2 * ret);
         }
 
-        for(int idx = 0; idx < nready; ++idx)
+        //遍历所有的就绪文件描述符
+        for(int idx = 0; idx != ret; ++idx)
         {
             int fd = _evtList[idx].data.fd;
-            if(_acceptor.fd() == fd) //代表有新链接过来
+            if(_accept.getFd() == fd)
             {
+                //fd与监听套接字的文件描述符相等，代表有新的连接过来
                 if(_evtList[idx].events & EPOLLIN)
                 {
                     handleNewConnection();
@@ -89,6 +111,7 @@ void EventLoop::waitEpollFd()
             }
             else
             {
+                //旧链接发送消息过来了
                 if(_evtList[idx].events & EPOLLIN)
                 {
                     handleMessage(fd);
@@ -100,76 +123,68 @@ void EventLoop::waitEpollFd()
 
 void EventLoop::handleNewConnection()
 {
-    //1、返回文件描述符.
-    int connfd = _acceptor.accept();
+    int connfd = _accept.accept();
     if(connfd < 0)
     {
         perror("handleNewConnection");
         return;
     }
 
-    //2、把文件描述符放入监听队列
     addEpollReadFd(connfd);
 
-    //3、如果connfd正确，连接就已经建立，
-    TcpConnectionPtr tcpCon(new TcpConnection(connfd));
-    //注册网络通信的三个事件
-    tcpCon->setNewConnectioCallback(_onConnection);
-    tcpCon->setMessageCallback(_onMessage);
-    tcpCon->setCloseCallback(_onClose);
+    TcpConnectPtr tcpconn(new TcpConnection(connfd));
 
-    //4、将connfd与TcpConnection键值对放入map
-    _conns.insert(std::make_pair(connfd, tcpCon));
-    tcpCon->handleNewConnectionCallback();
+    //在此注册三个事件
+    tcpconn->setNewConnectionCallback(_onConnection);
+    tcpconn->setMessageCallback(_onMessage);
+    tcpconn->setCloseCallback(_onClose);
+
+    _conns.insert(std::make_pair(connfd, tcpconn));
+
+    //执行连接建立事件
+    tcpconn->handleNewConnectionCallback();
 }
 
 void EventLoop::handleMessage(int fd)
 {
     auto it = _conns.find(fd);
+
     //连接存在
     if(it != _conns.end())
     {
-        bool flag = it->second->isClosed();//判断读操作是否结束
+        
+        bool flag = it->second->isClosed();
+        //连接断开
         if(flag)
         {
-            it->second->handleCloseCallback();  //执行连接断开事件
-            delEpollReadFd(fd); //将监听结点从红黑树上删除
+            it->second->handleCloseCallback();
+            delEpollReadFd(fd);
             _conns.erase(it);
         }
+        //连接未断开
         else
         {
-            it->second->handleMessageCallback();//执行消息到达事件
+            it->second->handleMessageCallback();
         }
     }
     else
     {
-        std::cout << "连接不存在" << std::endl;
+        std::cout << "连接不存在。" << std::endl;
         return;
     }
 }
 
-void EventLoop::addEpollReadFd(int fd)
+void EventLoop::setConnectionCallback(TcpConnectionCallback && cb)
 {
-    struct epoll_event evt;
-    evt.events = EPOLLIN;
-    evt.data.fd = fd;
-    int ret = ::epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &evt);
-    if (ret < 0)
-    {
-        perror("EPOLL_CTL_ADD");
-        return;
-    }
+    _onConnection = std::move(cb);
 }
 
-void EventLoop::delEpollReadFd(int fd)
+void EventLoop::setMessageCallback(TcpConnectionCallback && cb)
 {
-    struct epoll_event evt;
-    evt.events = EPOLLIN;
-    evt.data.fd = fd;
-    int ret = ::epoll_ctl(_epfd, EPOLL_CTL_DEL, fd, &evt);
-    if (ret < 0)
-    {
-        perror("EPOLL_CTL_DEL");
-        return;
-    }
+    _onMessage = std::move(cb);
+}
+
+void EventLoop::setCloseCallback(TcpConnectionCallback && cb)
+{
+    _onClose = std::move(cb);
 }

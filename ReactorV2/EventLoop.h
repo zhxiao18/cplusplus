@@ -1,52 +1,52 @@
-#ifndef _EVENTLOOP_H__
-#define _EVENTLOOP_H__
+#ifndef __EVENTLOOP_H__
+#define __EVENTLOOP_H__
 
+#include "Acceptor.h"
+#include "TcpConnection.h"
 #include <sys/epoll.h>
-#include <map>
 #include <memory>
-#include <functional>
 #include <vector>
+#include <map>
+#include <functional>
 
 using std::vector;
 using std::map;
 using std::shared_ptr;
 using std::function;
 
-class Acceptor;
-class TcpConnection;
-
-using TcpConnectionPtr = shared_ptr<TcpConnection>;
-using TcpConnectionCallback = function<void(const TcpConnectionPtr & con)>;
+using TcpConnectPtr = shared_ptr<TcpConnection>;
+using TcpConnectionCallback = function<void(const TcpConnectPtr &con)>;
 
 class EventLoop
 {
 public:
-    EventLoop(Acceptor & acceptor);
+    EventLoop(Acceptor & accept);
     ~EventLoop();
     void loop();
     void unloop();
-    void setNewConnectionCallback(TcpConnectionCallback && cb);
+
+    //设置事件函数,只是作为中转，如果TcpConnection在EventLoop类外创建，则不需要
+    void setConnectionCallback(TcpConnectionCallback && cb);
     void setMessageCallback(TcpConnectionCallback && cb);
     void setCloseCallback(TcpConnectionCallback && cb);
 private:
-    //封装epoll_wait
-    void waitEpollFd();
     int createEpollFd();
-    void handleNewConnection();
-    void handleMessage(int fd);
     void addEpollReadFd(int fd);
     void delEpollReadFd(int fd);
+    void waitEpollFd();
+    void handleNewConnection();
+    void handleMessage(int fd);
+
 private:
     int _epfd;
     bool _isLooping;
-    Acceptor & _acceptor; //为了调用_acceptor中的fd()获得socket的fd
+    Acceptor & _accept;
     vector<struct epoll_event> _evtList;
-    map<int, shared_ptr<TcpConnection>> _conns; //存放文件描述符与Tcp键值对
+    map<int, TcpConnectPtr> _conns;
+
     TcpConnectionCallback _onConnection;
     TcpConnectionCallback _onMessage;
     TcpConnectionCallback _onClose;
 };
 
 #endif
-
-

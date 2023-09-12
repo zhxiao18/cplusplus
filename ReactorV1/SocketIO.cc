@@ -1,14 +1,12 @@
 #include "SocketIO.h"
-#include <unistd.h>
-#include <errno.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
 
 SocketIO::SocketIO(int fd)
-:_fd(fd)
+: _fd(fd)
 {
-
 }
 
 SocketIO::~SocketIO()
@@ -16,61 +14,33 @@ SocketIO::~SocketIO()
     close(_fd);
 }
 
-int SocketIO::writen(const char * buf, int len)
+int SocketIO::writen(const char  *buff, int len)
 {
-   int left = len;
-   const char * pstr = buf;
-   int ret = 0;
-
-   while(left > 0)
-   {
-       ret = write(_fd, pstr, left);
-       if(-1 == ret && errno == EINTR)
-       {
-           continue;
-       }
-       else if(-1 == ret)
-       {
-           perror("writen errno = -1");
-           return len - ret;
-       }
-       else if(0 == ret)
-       {
-           break;
-       }
-       else
-       {
-           pstr += ret;
-           left -= ret;
-       }
-   }
-   return len = left;
-}
-
-int SocketIO::readn(char * buf, int len)
-{
+    const char * pstr = buff;
     int left = len;
-    char * pstr = buf;
     int ret = 0;
 
     while(left > 0)
     {
-        ret = read(_fd, pstr, left);
-
-        if(-1 == ret && errno == EINTR) //中断
+        ret = write(_fd, pstr, left);
+        if(-1 == ret && errno == EINTR)
         {
+            //发生中断
             continue;
         }
-        else if(-1 == ret) //异常
+        else if(-1 == ret)
         {
-            perror("read errno = -1");
-            return len - ret;
+            //错误
+            perror("write error:-1");
+            return len - left;
         }
-        else if(0 == ret) //断开链接
+        else if(0 == ret)
         {
+            //数据写完了
             break;
         }
-        else{
+        else
+        {
             pstr += ret;
             left -= ret;
         }
@@ -78,23 +48,23 @@ int SocketIO::readn(char * buf, int len)
     return len - left;
 }
 
-int SocketIO::readLine(char * buf, int len)
+int SocketIO::readn(char *buff, int len)
 {
-    int left = len - 1;
-    char * pstr = buf;
-    int ret = 0, total = 0;
+    char * pstr = buff;
+    int left = len;
+    int ret = 0;
 
-    while(left > 0)
+    while (left > 0)
     {
-        ret = recv(_fd, pstr, left, MSG_PEEK);
+        ret = read(_fd, pstr, left);
         if(-1 == ret && errno == EINTR)
         {
             continue;
         }
         else if(-1 == ret)
         {
-            perror("readline errno = -1");
-            return len - ret; 
+            perror("readn error : -1");
+            return len - left;
         }
         else if(0 == ret)
         {
@@ -102,21 +72,58 @@ int SocketIO::readLine(char * buf, int len)
         }
         else
         {
-            for(int idx = 0; idx < ret; ++idx)
+            pstr += ret;
+            left -= ret;
+        }
+    }
+    return len - left;
+}
+
+int SocketIO::readLine(char *buff, int len)
+{
+    char * pstr = buff;
+    int left = len;
+    int ret = 0, total = 0;
+
+    while (left > 0)
+    {
+        //使用MSG_PEEK是因为不确定是否读到行尾
+        ret = recv(_fd, pstr, left, MSG_PEEK);
+        if(-1 == ret && errno == EINTR)
+        {
+            continue;
+        }
+        else if(-1 == ret)
+        {
+            perror("readLine error: -1");
+            return len - left;
+        }
+        else if(0 == ret)
+        {
+            break;
+        }
+        else
+        {
+            //读到行尾
+            for(int idx = 0; idx != ret; ++idx)
             {
                 if(pstr[idx] == '\n')
                 {
-                    int sz = idx + 1;
-                    readn(pstr, sz);
-                    pstr += sz;
+                    int size = idx + 1;
+                    readn(pstr, size);
+                    pstr += size;
                     *pstr = '\0';
-                    return total + sz;
+
+                    return total + size;
                 }
             }
+            //未读到行尾
             readn(pstr, ret);
             total += ret;
             pstr += ret;
             left -= ret;
         }
     }
+    *pstr = '\0';
+    return len - left;
 }

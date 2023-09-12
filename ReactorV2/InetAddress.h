@@ -1,7 +1,9 @@
-#ifndef _INETADDRESS_H__
-#define _INETADDRESS_H__
+#ifndef __INETADDRESS_H__
+#define __INETADDRESS_H__
 
-#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h> //sockaddr_in
 #include <string>
 
 using std::string;
@@ -10,12 +12,11 @@ class InetAddress
 {
 public:
     InetAddress(const string & ip, unsigned short port);
-    InetAddress(const struct sockaddr_in & addr);
+    InetAddress(struct sockaddr_in & addr);
     ~InetAddress();
-    string ip() const;
-    unsigned short port() const;
-    const struct sockaddr_in * getInetAddressPtr() const;
-
+    string getIp() const;
+    unsigned short getPort() const;
+    const struct sockaddr_in * getInetaddressPtr() const;
 private:
     struct sockaddr_in _addr;
 };
